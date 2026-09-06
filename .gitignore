@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Flask instance folder (holds local SQLite DB, secrets)
+instance/
+
+# Environment variables
+.flaskenv
+.env
+
+
+*.db
+*.sqlite
+*.sqlite3
+
+# macOS system files
+.DS_Store
+__MACOSX/
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
