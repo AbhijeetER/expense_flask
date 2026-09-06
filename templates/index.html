@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Expense Tracker & Task Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: { extend: { colors: { brand: { DEFAULT: "#38bdf8" } } } },
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="h-full bg-slate-900 text-slate-100">
+    <main class="mx-auto max-w-6xl px-4 py-8">
+      
+      <!-- Flash Alert Warnings Box Wrapper -->
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-2 rounded-xl mb-4 text-sm">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <h1 class="text-3xl font-semibold mb-2">Finance & Task Dashboard</h1>
+      <p class="text-slate-400 mb-6">Track spending distributions and optimize tasks synchronously.</p>
+
+      <!-- Main Input Forms Section Grid Layout Split -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Action Input Box Left Split: Expense Management -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <h2 class="text-lg font-semibold mb-3 text-brand">Add New Expense</h2>
+          <form method="post" action="{{ url_for('add') }}" class="space-y-3">
+            <label class="block text-sm">
+              <span class="mb-1 block text-slate-300">Description</span>
+              <input name="description" placeholder="e.g., Target Groceries" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100 focus:outline-none focus:border-brand" required />
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="block text-sm">
+                <span class="mb-1 block text-slate-300">Amount ($)</span>
+                <input name="amount" type="number" step="0.01" min="0.01" placeholder="25.00" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100 focus:outline-none focus:border-brand" required />
+              </label>
+              <label class="block text-sm">
+                <span class="mb-1 block text-slate-300">Date</span>
+                <input name="date" type="date" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100 focus:outline-none focus:border-brand" />
+              </label>
+            </div>
+            <label class="block text-sm">
+              <span class="mb-1 block text-slate-300">Category</span>
+              <select name="category" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100 focus:outline-none">
+                {% for c in categories %}
+                  <option>{{ c }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button class="w-full rounded-xl bg-brand/20 hover:bg-brand/30 text-brand px-4 py-2 border border-brand/30 font-medium transition" type="submit">Add Expense</button>
+          </form>
+          
+          <div class="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-sm">
+            <span class="text-slate-400">Total Spent:</span>
+            <span class="text-xl font-bold text-emerald-400">${{ "%.2f"|format(total_amount) }}</span>
+          </div>
+        </section>
+
+        <!-- Action Input Box Right Split: Integrated Todo Task Board -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <h2 class="text-lg font-semibold mb-3 text-amber-400">Add New Todo</h2>
+          <form method="post" action="{{ url_for('add_todo') }}" class="space-y-3">
+            <label class="block text-sm">
+              <span class="mb-1 block text-slate-300">Task Objective</span>
+              <input name="content" placeholder="e.g., Review credit card statements" class="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-slate-100 focus:outline-none focus:border-amber-400" required />
+            </label>
+            <button class="w-full rounded-xl bg-amber-400/10 hover:bg-amber-400/20 text-amber-400 px-4 py-2 border border-amber-400/20 font-medium transition" type="submit">Create Task</button>
+          </form>
+          
+          <div class="mt-12 pt-4 border-t border-slate-800 flex justify-between items-center text-sm">
+            <span class="text-slate-400">Unfinished Tasks:</span>
+            <span class="text-xl font-bold text-amber-400">{{ pending_tasks }} Remaining</span>
+          </div>
+        </section>
+
+        <!-- Simple Clean Category Pie Chart Visualization Hook -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900 p-5 flex flex-col justify-between">
+          <h2 class="text-lg font-semibold mb-2">Spending Breakdown</h2>
+          <div class="relative max-h-48 mx-auto flex items-center justify-center">
+            <canvas id="categoryPieChart" width="180" height="180"></canvas>
+          </div>
+        </section>
+      </div>
+
+      <!-- BOTTOM ROW DATA VISUALIZATIONS BOARDS MAP -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+        
+        <!-- Live Data Display Table Box Module Container (Spans 2 columns) -->
+        <section class="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-800 bg-slate-800/30">
+            <h2 class="text-lg font-semibold">Tracked Financial Ledger Records</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-slate-400 bg-slate-800/50">
+                <tr>
+                  <th class="text-left px-4 py-3">Date</th>
+                  <th class="text-left px-4 py-3">Description</th>
+                  <th class="text-left px-4 py-3">Category</th>
+                  <th class="text-right px-4 py-3">Amount</th>
+                  <th class="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60">
+                {% for expense in expenses %}
+                <tr class="hover:bg-slate-800/30 transition">
+                  <td class="px-4 py-3 text-slate-400">{{ expense.date }}</td>
+                  <td class="px-4 py-3 font-medium text-slate-200">{{ expense.description }}</td>
+                  <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs bg-slate-800 border border-slate-700">{{ expense.category }}</span></td>
+                  <td class="px-4 py-3 text-right font-semibold text-emerald-400">${{ "%.2f"|format(expense.amount) }}</td>
+                  <td class="px-4 py-3 text-right flex justify-end gap-2">
+                    <a href="{{ url_for('edit_post', expense_id=expense.id) }}" class="text-xs text-sky-400 hover:underline border border-sky-400/20 px-2 py-1 rounded-lg bg-sky-400/5">Edit</a>
+                    <a href="{{ url_for('delete_expense', id=expense.id) }}" class="text-xs text-rose-400 hover:underline border border-rose-400/20 px-2 py-1 rounded-lg bg-rose-400/5">Delete</a>
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="5" class="px-4 py-8 text-center text-slate-500">No transactions recorded yet. Log your first expense above!</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Live Data Display Todo List Layout Component -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-800 bg-slate-800/30">
+            <h2 class="text-lg font-semibold">Active Action Objectives</h2>
+          </div>
+          <ul class="divide-y divide-slate-800 max-h-72 overflow-y-auto">
+            {% for todo in todos %}
+            <li class="px-4 py-3 flex items-center justify-between gap-3 {% if todo.complete %}bg-slate-800/10{% endif %}">
+              <div class="flex items-center gap-3">
+                <a href="{{ url_for('toggle_todo', id=todo.id) }}" class="cursor-pointer text-lg select-none">
+                  {% if todo.complete %}✅{% else %}🔲{% endif %}
+                </a>
+                <span class="text-sm {% if todo.complete %}line-through text-slate-500{% else %}text-slate-300{% endif %}">
+                  {{ todo.content }}
+                </span>
+              </div>
+              <a href="{{ url_for('delete_todo', id=todo.id) }}" class="text-xs text-slate-500 hover:text-rose-400 transition">✕</a>
+            </li>
+            {% else %}
+            <li class="px-4 py-8 text-center text-slate-500 text-sm">Your task stack is clear. Enjoy the day!</li>
+            {% endfor %}
+          </ul>
+        </section>
+        
+      </div>
+    </main>
+
+    <!-- JavaScript Injection Script for Reactive Pie Chart Configuration Map -->
+    <script>
+      const ctx = document.getElementById('categoryPieChart').getContext('2d');
+      const labelsData = {{ chart_labels | safe }};
+      const valuesData = {{ chart_values | safe }};
+      
+      if(labelsData.length === 0) {
+          ctx.font = "14px sans-serif";
+          ctx.fillStyle = "#64748b";
+          ctx.textAlign = "center";
+          ctx.fillText("No spending metrics captured", 90, 90);
+      } else {
+          new Chart(ctx, {
+            type: 'pie',
+            data: {
+              labels: labelsData,
+              datasets: [{
+                data: valuesData,
+                backgroundColor: ['#38bdf8', '#34d399', '#fbbf24', '#f87171', '#a78bfa'],
+                borderWidth: 0
+              }]
+            },
+            options: {plugins: { legend: { display: false } },responsive: true,maintainAspectRatio: false}});}
+    </script>
+  </body>
+</html>
